@@ -10,7 +10,7 @@ A Blender addon that bridges CodeWalker with Sollumz for importing/exporting GTA
 - 📁 Configure paths to CodeWalker, Blender, FiveM, and RPF archives
 - 📦 Export assets and auto-import them back into RPF archives
 - 🔁 Sync configuration between Blender and backend
-- 📄 Supports YDR, YDD, YFT, YTYP, and more
+- 📄 Supports YDR, YFT
 
 ## Requirements
 
