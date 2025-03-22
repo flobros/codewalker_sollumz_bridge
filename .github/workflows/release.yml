@@ -29,4 +29,4 @@ jobs:
         with:
           files: build/codewalker_sollumz_bridge_${{ steps.get_version.outputs.VERSION }}.zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
