@@ -13,20 +13,34 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Print working directory
+        run: pwd
+
+      - name: List all files and folders
+        run: ls -R
+
       - name: Get tag name (version)
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+        run: |
+          echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "VERSION=$GITHUB_REF"
+          echo "Extracted version: ${GITHUB_REF##*/}"
+
+      - name: Show version env
+        run: echo "Using VERSION=$VERSION"
 
       - name: Set up zip structure
         run: |
           mkdir build
           cp -r codewalker_sollumz_bridge build/codewalker_sollumz_bridge
           cd build
-          zip -r codewalker_sollumz_bridge_${{ steps.get_version.outputs.VERSION }}.zip codewalker_sollumz_bridge
+          zip -r codewalker_sollumz_bridge_${VERSION}.zip codewalker_sollumz_bridge
+
+      - name: List build folder
+        run: ls -l build
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: build/codewalker_sollumz_bridge_${{ steps.get_version.outputs.VERSION }}.zip
+          files: build/codewalker_sollumz_bridge_${{ env.VERSION }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
