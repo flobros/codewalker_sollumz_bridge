@@ -1,0 +1,32 @@
+name: Build and Release Blender Addon
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Get tag name (version)
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+
+      - name: Set up zip structure
+        run: |
+          mkdir build
+          cp -r codewalker_sollumz_bridge build/codewalker_sollumz_bridge
+          cd build
+          zip -r codewalker_sollumz_bridge_${{ steps.get_version.outputs.VERSION }}.zip codewalker_sollumz_bridge
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/codewalker_sollumz_bridge_${{ steps.get_version.outputs.VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
