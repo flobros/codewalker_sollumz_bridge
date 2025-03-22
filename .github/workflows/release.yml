@@ -22,7 +22,6 @@ jobs:
       - name: Get tag name (version)
         run: |
           echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
-          echo "VERSION=$GITHUB_REF"
           echo "Extracted version: ${GITHUB_REF##*/}"
 
       - name: Show version env
@@ -30,8 +29,9 @@ jobs:
 
       - name: Set up zip structure
         run: |
-          mkdir build
-          cp -r codewalker_sollumz_bridge build/codewalker_sollumz_bridge
+          mkdir -p build/codewalker_sollumz_bridge
+          shopt -s extglob
+          cp -r !(build|.git|.github) build/codewalker_sollumz_bridge
           cd build
           zip -r codewalker_sollumz_bridge_${VERSION}.zip codewalker_sollumz_bridge
 
