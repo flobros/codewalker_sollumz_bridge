@@ -1,6 +1,6 @@
 # CodeWalker-Sollumz Bridge
 
-![Screenshot](https://i.postimg.cc/hvTrYYWP/codewalker-sollumz-bridge.png)
+![Screenshot](https://i.postimg.cc/2jMqDvfq/codewalker-sollumz-bridge.png)
 
 A Blender addon that bridges CodeWalker with Sollumz for importing/exporting GTA V assets.
 
