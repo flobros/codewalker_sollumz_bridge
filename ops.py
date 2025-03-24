@@ -2,7 +2,7 @@ import bpy
 import os
 import requests
 from bpy.types import Operator
-from bpy.props import BoolProperty
+from bpy.props import BoolProperty, StringProperty
 from .utils import get_api_base_url, import_file
 from .props import CW_Sollumz_Properties
 
@@ -82,6 +82,50 @@ class ImportFileOperator(Operator):
         except Exception as e:
             self.report({'ERROR'}, f"Import failed: {str(e)}")
         return {'FINISHED'}
+    
+class PickFolderAndSyncOperator(Operator):
+    bl_idname = "cw_sollumz.pick_folder"
+    bl_label = "Pick Folder and Sync"
+
+    filepath: StringProperty(subtype="FILE_PATH")  # still needed by Blender internally
+    directory: StringProperty(subtype="DIR_PATH")  # ✅ actual folder selected
+    folder_prop: StringProperty()
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        props = context.scene.cw_sollumz_props
+        folder_path = self.directory  # ✅ now this is the correct folder
+
+        if self.folder_prop == "codewalker_output_dir":
+            props.codewalker_output_dir = folder_path
+        elif self.folder_prop == "blender_output_dir":
+            props.blender_output_dir = folder_path
+        elif self.folder_prop == "fivem_output_dir":
+            props.fivem_output_dir = folder_path
+        elif self.folder_prop == "rpf_path":
+            props.rpf_path = folder_path
+
+        # === Sync to backend
+        try:
+            payload = {
+                "codewalkerOutputDir": props.codewalker_output_dir,
+                "blenderOutputDir": props.blender_output_dir,
+                "fivemOutputDir": props.fivem_output_dir,
+                "rpfArchivePath": props.rpf_path
+            }
+            response = requests.post(f"{get_api_base_url(props.api_port)}/set-config", json=payload)
+            if response.status_code == 200:
+                self.report({'INFO'}, "Folder set and backend synced.")
+            else:
+                self.report({'ERROR'}, f"Sync failed: {response.status_code}")
+        except Exception as e:
+            self.report({'ERROR'}, f"Error: {e}")
+
+        return {'FINISHED'}
+
 
 class ExportToRpfOperator(Operator):
     bl_idname = "cw_sollumz.export_to_rpf"
@@ -89,68 +133,78 @@ class ExportToRpfOperator(Operator):
 
     def execute(self, context):
         props = context.scene.cw_sollumz_props
+        exported_files = []
 
+        # === Force disable internal YTYP export ===
         prefs = bpy.context.preferences.addons.get("bl_ext.user_default.sollumz")
         if prefs:
             export_settings = prefs.preferences.export_settings
             if hasattr(export_settings, 'export_with_ytyp'):
                 export_settings.export_with_ytyp = False
                 print("[DEBUG] export_with_ytyp has been set to:", export_settings.export_with_ytyp)
-            else:
-                print("[DEBUG] export_with_ytyp attribute not found on export_settings")
-        else:
-            print("[DEBUG] 'sollumz' addon not found in preferences")
 
-        # === Track existing XMLs BEFORE export ===
-        before_files = set(os.listdir(props.blender_output_dir))
+        selected_objects = context.selected_objects
 
-        if props.export_with_ytyp:
+        for obj in selected_objects:
             try:
-                bpy.ops.sollumz.createytyp()
+                bpy.ops.object.select_all(action='DESELECT')
+                obj.select_set(True)
+                context.view_layer.objects.active = obj
 
-                selected_objects = context.selected_objects
-                if len(selected_objects) == 1:
-                    selected_name = selected_objects[0].name
-                    ytyp_index = context.scene.ytyp_index
-                    if 0 <= ytyp_index < len(context.scene.ytyps):
-                        context.scene.ytyps[ytyp_index].name = selected_name
-                else:
-                    self.report({'WARNING'}, "Please select exactly one object to name the YTYP.")
+                # === Export model (YDR/YFT/etc) ===
+                result = bpy.ops.sollumz.export_assets(directory=props.blender_output_dir)
+                if result != {'FINISHED'}:
+                    self.report({'WARNING'}, f"Model export failed for {obj.name}")
+                    continue
 
-                bpy.ops.sollumz.createarchetypefromselected()
-                bpy.ops.sollumz.exportytyp(directory=props.blender_output_dir)
-                self.report({'INFO'}, "YTYP created and exported.")
+                # === Export YTYP per object if enabled ===
+                if props.export_with_ytyp:
+                    bpy.ops.sollumz.createytyp()
+
+                    # Always get the latest created YTYP and lowercase it
+                    if len(context.scene.ytyps) > 0:
+                        new_ytyp = context.scene.ytyps[-1]
+                        new_ytyp.name = obj.name.lower()
+                        context.scene.ytyp_index = len(context.scene.ytyps) - 1
+                        print(f"[DEBUG] YTYP name set to: {new_ytyp.name}")
+                    else:
+                        self.report({'WARNING'}, f"YTYP creation failed for {obj.name}")
+                        continue
+
+                    bpy.ops.sollumz.createarchetypefromselected()
+                    bpy.ops.sollumz.exportytyp(directory=props.blender_output_dir)
+
+
+                # === Collect any matching .xml files for this object
+                obj_name_lower = obj.name.lower()
+                for f in os.listdir(props.blender_output_dir):
+                    if f.lower().startswith(obj_name_lower + ".") and f.endswith(".xml"):
+                        full_path = os.path.join(props.blender_output_dir, f)
+                        exported_files.append(full_path)
+
             except Exception as e:
-                self.report({'WARNING'}, f"YTYP export failed: {e}")
+                self.report({'WARNING'}, f"Export failed for {obj.name}: {e}")
 
-        result = bpy.ops.sollumz.export_assets(directory=props.blender_output_dir)
-        if result != {'FINISHED'}:
-            self.report({'ERROR'}, "Export failed.")
+        if not exported_files:
+            self.report({'ERROR'}, "No valid XML files were exported.")
             return {'CANCELLED'}
 
-        # === Track new XML files created ===
-        after_files = set(os.listdir(props.blender_output_dir))
-        new_xmls = [os.path.join(props.blender_output_dir, f) for f in (after_files - before_files) if f.endswith(".xml")]
-
-        if not new_xmls:
-            self.report({'WARNING'}, "No new XML files to import.")
-            return {'CANCELLED'}
-
+        # === Send collected files to backend
         try:
             response = requests.post(f"{get_api_base_url(props.api_port)}/import-xml", data={
-                "filePaths": new_xmls,
+                "filePaths": exported_files,
                 "rpfArchivePath": props.rpf_path,
                 "outputFolder": props.fivem_output_dir
             })
+
             if response.status_code == 200:
-                self.report({'INFO'}, "Imported to RPF and FiveM output folder.")
+                self.report({'INFO'}, f"Imported {len(exported_files)} file(s) to RPF and FiveM.")
             else:
                 self.report({'ERROR'}, f"Import API failed: {response.status_code}")
         except Exception as e:
             self.report({'ERROR'}, f"Export error: {e}")
 
         return {'FINISHED'}
-
 
 class ExportYtypOperator(Operator):
     bl_idname = "cw_sollumz.export_ytyp"
@@ -208,7 +262,8 @@ classes = [
     ExportToRpfOperator,
     ExportYtypOperator,
     SyncBackendConfigOperator,
-    PullBackendConfigOperator
+    PullBackendConfigOperator,
+    PickFolderAndSyncOperator
 ]
 
 def register():

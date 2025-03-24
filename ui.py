@@ -1,5 +1,6 @@
 import bpy
 from bpy.types import Panel, UIList
+import os
 from .ops import SyncBackendConfigOperator  # ✅ Move Operator to ops
 
 class CW_Sollumz_UIList(UIList):
@@ -7,7 +8,14 @@ class CW_Sollumz_UIList(UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_property, index):
         row = layout.row(align=True)
-        row.label(text=item.name)
+
+        filename = os.path.basename(item.name)
+        folder = os.path.dirname(item.name)
+
+        # Filename display
+        row.label(text=filename, icon='FILE')
+
+        # Import button
         op = row.operator("cw_sollumz.import_file", text="Import")
         op.index = index
 
@@ -35,12 +43,30 @@ class CodeWalkerSollumzPanel(Panel):
         row.label(text="API Configuration")
         if props.show_api_section:
             box.prop(props, "api_port")
-            box.prop(props, "codewalker_output_dir")
-            box.prop(props, "blender_output_dir")
-            box.prop(props, "fivem_output_dir")
-            box.prop(props, "rpf_path")
+
+            row = box.row()
+            row.prop(props, "codewalker_output_dir", text="CodeWalker Output")
+            op = row.operator("cw_sollumz.pick_folder", text="", icon='FILE_FOLDER')
+            op.folder_prop = "codewalker_output_dir"
+
+            row = box.row()
+            row.prop(props, "blender_output_dir", text="Blender Output")
+            op = row.operator("cw_sollumz.pick_folder", text="", icon='FILE_FOLDER')
+            op.folder_prop = "blender_output_dir"
+
+            row = box.row()
+            row.prop(props, "fivem_output_dir", text="FiveM Output")
+            op = row.operator("cw_sollumz.pick_folder", text="", icon='FILE_FOLDER')
+            op.folder_prop = "fivem_output_dir"
+
+            row = box.row()
+            row.prop(props, "rpf_path", text="RPF Archive")
+            op = row.operator("cw_sollumz.pick_folder", text="", icon='FILE_FOLDER')
+            op.folder_prop = "rpf_path"
+
             box.operator("cw_sollumz.sync_config")
             box.operator("cw_sollumz.pull_config", text="Pull Config")
+
             
         # 📦 Export Options
         box = layout.box()
