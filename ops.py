@@ -3,7 +3,7 @@ import os
 import requests
 from bpy.types import Operator
 from bpy.props import BoolProperty, StringProperty
-from .utils import get_api_base_url, import_file
+from .utils import filter_only_top_level_objects, get_api_base_url, import_file
 from .props import CW_Sollumz_Properties
 
 
@@ -144,6 +144,8 @@ class ExportToRpfOperator(Operator):
                 print("[DEBUG] export_with_ytyp has been set to:", export_settings.export_with_ytyp)
 
         selected_objects = context.selected_objects
+        selected_objects = filter_only_top_level_objects(selected_objects)
+
 
         for obj in selected_objects:
             try:
