@@ -1,7 +1,7 @@
 bl_info = {
     "name": "CodeWalker-Sollumz Bridge",
     "author": "tr1cks",
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     "blender": (4, 3, 0),
     "location": "View3D > Sidebar > CodeWalker-Sollumz",
     "description": "Import/export bridge between CodeWalker and Sollumz",
