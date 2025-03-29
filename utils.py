@@ -15,3 +15,14 @@ def import_file(directory, file_name):
 def filter_only_top_level_objects(objects):
     local_set = set(objects)
     return [obj for obj in objects if obj.parent not in local_set]
+
+def promote_to_root_objects(objects):
+    result = set()
+    for obj in objects:
+        # Climb to the topmost parent
+        top = obj
+        while top.parent is not None:
+            top = top.parent
+        result.add(top)
+    return list(result)
+

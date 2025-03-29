@@ -3,9 +3,8 @@ import os
 import requests
 from bpy.types import Operator
 from bpy.props import BoolProperty, StringProperty
-from .utils import filter_only_top_level_objects, get_api_base_url, import_file
+from .utils import promote_to_root_objects, get_api_base_url, import_file
 from .props import CW_Sollumz_Properties
-
 
 class PullBackendConfigOperator(Operator):
     bl_idname = "cw_sollumz.pull_config"
@@ -144,7 +143,7 @@ class ExportToRpfOperator(Operator):
                 print("[DEBUG] export_with_ytyp has been set to:", export_settings.export_with_ytyp)
 
         selected_objects = context.selected_objects
-        selected_objects = filter_only_top_level_objects(selected_objects)
+        selected_objects = promote_to_root_objects(selected_objects)
 
 
         for obj in selected_objects:
@@ -219,6 +218,7 @@ class ExportYtypOperator(Operator):
             bpy.ops.sollumz.createytyp()
 
             selected_objects = context.selected_objects
+            selected_objects = promote_to_root_objects(selected_objects)
             if len(selected_objects) == 1:
                 selected_name = selected_objects[0].name
                 ytyp_index = context.scene.ytyp_index
