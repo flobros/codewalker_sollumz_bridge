@@ -145,7 +145,6 @@ class ExportToRpfOperator(Operator):
         selected_objects = context.selected_objects
         selected_objects = promote_to_root_objects(selected_objects)
 
-
         for obj in selected_objects:
             try:
                 bpy.ops.object.select_all(action='DESELECT')
@@ -158,25 +157,25 @@ class ExportToRpfOperator(Operator):
                     self.report({'WARNING'}, f"Model export failed for {obj.name}")
                     continue
 
-                # === Export YTYP per object if enabled ===
+                # === Conditionally export YTYP ===
                 if props.export_with_ytyp:
-                    bpy.ops.sollumz.createytyp()
+                    print(f"[DEBUG] Exporting YTYP for {obj.name}")
+                    try:
+                        bpy.ops.sollumz.createytyp()
+                        if len(context.scene.ytyps) > 0:
+                            new_ytyp = context.scene.ytyps[-1]
+                            new_ytyp.name = obj.name.lower()
+                            context.scene.ytyp_index = len(context.scene.ytyps) - 1
+                            print(f"[DEBUG] YTYP name set to: {new_ytyp.name}")
+                        else:
+                            self.report({'WARNING'}, f"YTYP creation failed for {obj.name}")
+                            continue
+                        bpy.ops.sollumz.createarchetypefromselected()
+                        bpy.ops.sollumz.exportytyp(directory=props.blender_output_dir)
+                    except Exception as e:
+                        self.report({'WARNING'}, f"YTYP export failed for {obj.name}: {e}")
 
-                    # Always get the latest created YTYP and lowercase it
-                    if len(context.scene.ytyps) > 0:
-                        new_ytyp = context.scene.ytyps[-1]
-                        new_ytyp.name = obj.name.lower()
-                        context.scene.ytyp_index = len(context.scene.ytyps) - 1
-                        print(f"[DEBUG] YTYP name set to: {new_ytyp.name}")
-                    else:
-                        self.report({'WARNING'}, f"YTYP creation failed for {obj.name}")
-                        continue
-
-                    bpy.ops.sollumz.createarchetypefromselected()
-                    bpy.ops.sollumz.exportytyp(directory=props.blender_output_dir)
-
-
-                # === Collect any matching .xml files for this object
+                # === Collect any matching .xml files for this object ===
                 obj_name_lower = obj.name.lower()
                 for f in os.listdir(props.blender_output_dir):
                     if f.lower().startswith(obj_name_lower + ".") and f.endswith(".xml"):
@@ -190,7 +189,7 @@ class ExportToRpfOperator(Operator):
             self.report({'ERROR'}, "No valid XML files were exported.")
             return {'CANCELLED'}
 
-        # === Send collected files to backend
+        # === Send collected files to backend ===
         try:
             response = requests.post(f"{get_api_base_url(props.api_port)}/import-xml", data={
                 "filePaths": exported_files,
