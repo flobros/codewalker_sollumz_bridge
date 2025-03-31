@@ -45,6 +45,11 @@ class CodeWalkerSollumzPanel(Panel):
             box.prop(props, "api_port")
 
             row = box.row()
+            row.prop(props, "gtapath")
+            op = row.operator("cw_sollumz.pick_folder", text="", icon='FILE_FOLDER')
+            op.folder_prop = "gtapath"
+
+            row = box.row()
             row.prop(props, "codewalker_output_dir", text="CodeWalker Output")
             op = row.operator("cw_sollumz.pick_folder", text="", icon='FILE_FOLDER')
             op.folder_prop = "codewalker_output_dir"

@@ -96,7 +96,15 @@ class PickFolderAndSyncOperator(Operator):
 
     def execute(self, context):
         props = context.scene.cw_sollumz_props
-        folder_path = self.directory  # ✅ now this is the correct folder
+        folder_path = self.directory
+
+        # Track whether restart is needed
+        requires_restart = False
+
+        if self.folder_prop == "gtapath":
+            if props.gtapath != folder_path:
+                requires_restart = True
+            props.gtapath = folder_path
 
         if self.folder_prop == "codewalker_output_dir":
             props.codewalker_output_dir = folder_path
@@ -110,6 +118,7 @@ class PickFolderAndSyncOperator(Operator):
         # === Sync to backend
         try:
             payload = {
+                "gtapath": props.gtapath,
                 "codewalkerOutputDir": props.codewalker_output_dir,
                 "blenderOutputDir": props.blender_output_dir,
                 "fivemOutputDir": props.fivem_output_dir,
@@ -118,14 +127,14 @@ class PickFolderAndSyncOperator(Operator):
             response = requests.post(f"{get_api_base_url(props.api_port)}/set-config", json=payload)
             if response.status_code == 200:
                 self.report({'INFO'}, "Folder set and backend synced.")
+                if requires_restart:
+                    self.report({'WARNING'}, "GTA Path changed — please restart the backend to apply changes.")
             else:
                 self.report({'ERROR'}, f"Sync failed: {response.status_code}")
         except Exception as e:
             self.report({'ERROR'}, f"Error: {e}")
 
         return {'FINISHED'}
-
-
 class ExportToRpfOperator(Operator):
     bl_idname = "cw_sollumz.export_to_rpf"
     bl_label = "Export to RPF/FiveM"

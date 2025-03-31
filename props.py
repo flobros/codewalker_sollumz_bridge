@@ -9,6 +9,7 @@ from bpy.props import (
 from bpy.types import PropertyGroup
 
 DEFAULT_PORT = "5555"
+DEFAULT_GTAPATH = "C:\\Program Files\\Rockstar Games\\Grand Theft Auto V"
 DEFAULT_CODEWALKER_OUTPUT_DIR = "C:\\GTA_FILES\cw_out"
 DEFAULT_BLENDER_OUTPUT_DIR = "C:\\GTA_FILES\\blender_out"
 DEFAULT_FIVEM_DIR = "C:\\GTA_FILES\\fivem_out"
@@ -24,6 +25,11 @@ class CW_Sollumz_Properties(PropertyGroup):
         name="API Port",
         description="Port of the running CodeWalker API",
         default=DEFAULT_PORT
+    )
+    gtapath: StringProperty(
+        name="GTA V Path",
+        description="Path to the GTA V installation",
+        default=DEFAULT_GTAPATH
     )
     search_filename: StringProperty(
         name="Filename",
