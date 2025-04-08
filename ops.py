@@ -200,7 +200,8 @@ class ExportToRpfOperator(Operator):
 
         # === Send collected files to backend ===
         try:
-            response = requests.post(f"{get_api_base_url(props.api_port)}/import-xml", data={
+            response = requests.post(f"{get_api_base_url(props.api_port)}/import", data={
+                "xml": "true",
                 "filePaths": exported_files,
                 "rpfArchivePath": props.rpf_path,
                 "outputFolder": props.fivem_output_dir
