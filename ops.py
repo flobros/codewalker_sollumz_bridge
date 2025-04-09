@@ -170,17 +170,26 @@ class ExportToRpfOperator(Operator):
                 if props.export_with_ytyp:
                     print(f"[DEBUG] Exporting YTYP for {obj.name}")
                     try:
-                        bpy.ops.sollumz.createytyp()
-                        if len(context.scene.ytyps) > 0:
+                        # Try to find an existing YTYP by name (case-insensitive match)
+                        existing_ytyp = next((y for y in context.scene.ytyps if y.name.lower() == obj.name.lower()), None)
+
+                        if existing_ytyp:
+                            context.scene.ytyp_index = list(context.scene.ytyps).index(existing_ytyp)
+                            print(f"[DEBUG] Found existing YTYP: {existing_ytyp.name}")
+                        else:
+                            # Create a new YTYP and name it after the object
+                            bpy.ops.sollumz.createytyp()
                             new_ytyp = context.scene.ytyps[-1]
                             new_ytyp.name = obj.name.lower()
                             context.scene.ytyp_index = len(context.scene.ytyps) - 1
-                            print(f"[DEBUG] YTYP name set to: {new_ytyp.name}")
-                        else:
-                            self.report({'WARNING'}, f"YTYP creation failed for {obj.name}")
-                            continue
+                            print(f"[DEBUG] Created new YTYP: {new_ytyp.name}")
+
+                        # Add archetype to selected object
                         bpy.ops.sollumz.createarchetypefromselected()
+
+                        # Export just this YTYP (per object export)
                         bpy.ops.sollumz.exportytyp(directory=props.blender_output_dir)
+
                     except Exception as e:
                         self.report({'WARNING'}, f"YTYP export failed for {obj.name}: {e}")
 
