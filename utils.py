@@ -1,3 +1,5 @@
+import bpy
+
 def get_api_base_url(port):
     return f"http://localhost:{port}/api"
 

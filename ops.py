@@ -118,7 +118,7 @@ class PickFolderAndSyncOperator(Operator):
         # === Sync to backend
         try:
             payload = {
-                "gtapath": props.gtapath,
+                "GTAPath": props.gtapath,
                 "codewalkerOutputDir": props.codewalker_output_dir,
                 "blenderOutputDir": props.blender_output_dir,
                 "fivemOutputDir": props.fivem_output_dir,
@@ -224,6 +224,7 @@ class ExportToRpfOperator(Operator):
             self.report({'ERROR'}, f"Export error: {e}")
 
         return {'FINISHED'}
+
 
 class ExportYtypOperator(Operator):
     bl_idname = "cw_sollumz.export_ytyp"

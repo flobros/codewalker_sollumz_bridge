@@ -8,9 +8,7 @@ bl_info = {
     "category": "Import-Export"
 }
 
-import bpy
 from . import props, ops, ui
-
 def register():
     props.register()  # ✅ must be first
     ops.register()
