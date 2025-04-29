@@ -96,7 +96,7 @@ class PickFolderAndSyncOperator(Operator):
 
     def execute(self, context):
         props = context.scene.cw_sollumz_props
-        folder_path = self.directory
+        folder_path = self.directory.rstrip("\\/")  # Normalize path
 
         # Track whether restart is needed
         requires_restart = False
@@ -263,6 +263,7 @@ class SyncBackendConfigOperator(Operator):
         props = context.scene.cw_sollumz_props
         try:
             payload = {
+                "GTAPath": props.gtapath,
                 "codewalkerOutputDir": props.codewalker_output_dir,
                 "blenderOutputDir": props.blender_output_dir,
                 "fivemOutputDir": props.fivem_output_dir,
