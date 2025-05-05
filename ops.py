@@ -20,6 +20,7 @@ class PullBackendConfigOperator(Operator):
                 props.blender_output_dir = config.get("blenderOutputDir", props.blender_output_dir)
                 props.fivem_output_dir = config.get("fivemOutputDir", props.fivem_output_dir)
                 props.rpf_path = config.get("rpfArchivePath", props.rpf_path)
+                props.gtapath = config.get("GTAPath", props.gtapath)
                 self.report({'INFO'}, "Configuration pulled from backend.")
             else:
                 self.report({'ERROR'}, f"Failed to fetch config: {response.status_code}")
