@@ -85,10 +85,10 @@ class ImportFileOperator(Operator):
     
 class PickFolderAndSyncOperator(Operator):
     bl_idname = "cw_sollumz.pick_folder"
-    bl_label = "Pick Folder and Sync"
+    bl_label = "Pick Folder or File and Sync"
 
-    filepath: StringProperty(subtype="FILE_PATH")  # still needed by Blender internally
-    directory: StringProperty(subtype="DIR_PATH")  # ✅ actual folder selected
+    filepath: StringProperty(subtype="FILE_PATH")
+    directory: StringProperty(subtype="DIR_PATH")
     folder_prop: StringProperty()
 
     def invoke(self, context, event):
@@ -97,26 +97,27 @@ class PickFolderAndSyncOperator(Operator):
 
     def execute(self, context):
         props = context.scene.cw_sollumz_props
-        folder_path = self.directory.rstrip("\\/")  # Normalize path
 
-        # Track whether restart is needed
+        if self.folder_prop == "rpf_path":
+            picked_path = self.filepath  # pick a file (RPF archive)
+        else:
+            picked_path = self.directory.rstrip("\\/")  # pick a folder
+
         requires_restart = False
 
         if self.folder_prop == "gtapath":
-            if props.gtapath != folder_path:
+            if props.gtapath != picked_path:
                 requires_restart = True
-            props.gtapath = folder_path
-
-        if self.folder_prop == "codewalker_output_dir":
-            props.codewalker_output_dir = folder_path
+            props.gtapath = picked_path
+        elif self.folder_prop == "codewalker_output_dir":
+            props.codewalker_output_dir = picked_path
         elif self.folder_prop == "blender_output_dir":
-            props.blender_output_dir = folder_path
+            props.blender_output_dir = picked_path
         elif self.folder_prop == "fivem_output_dir":
-            props.fivem_output_dir = folder_path
+            props.fivem_output_dir = picked_path
         elif self.folder_prop == "rpf_path":
-            props.rpf_path = folder_path
+            props.rpf_path = picked_path
 
-        # === Sync to backend
         try:
             payload = {
                 "GTAPath": props.gtapath,
@@ -127,13 +128,13 @@ class PickFolderAndSyncOperator(Operator):
             }
             response = requests.post(f"{get_api_base_url(props.api_port)}/set-config", json=payload)
             if response.status_code == 200:
-                self.report({'INFO'}, "Folder set and backend synced.")
+                self.report({'INFO'}, "Path set and backend synced.")
                 if requires_restart:
-                    self.report({'WARNING'}, "GTA Path changed — please restart the backend to apply changes.")
+                    self.report({'WARNING'}, "GTA Path changed — please restart the backend.")
             else:
                 self.report({'ERROR'}, f"Sync failed: {response.status_code}")
         except Exception as e:
-            self.report({'ERROR'}, f"Error: {e}")
+            self.report({'ERROR'}, f"Error syncing config: {e}")
 
         return {'FINISHED'}
 class ExportToRpfOperator(Operator):
