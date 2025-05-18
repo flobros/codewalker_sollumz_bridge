@@ -3,7 +3,12 @@ import os
 import requests
 from bpy.types import Operator
 from bpy.props import BoolProperty, StringProperty
-from .utils import promote_to_root_objects, get_api_base_url, import_file
+from .utils import (
+    get_api_base_url,
+    promote_to_root_objects,
+    get_canonical_object_name,
+    DEFAULT_EQUIVALENCE_PROFILE,
+)
 from .props import CW_Sollumz_Properties
 
 class PullBackendConfigOperator(Operator):
@@ -137,6 +142,7 @@ class PickFolderAndSyncOperator(Operator):
             self.report({'ERROR'}, f"Error syncing config: {e}")
 
         return {'FINISHED'}
+    
 class ExportToRpfOperator(Operator):
     bl_idname = "cw_sollumz.export_to_rpf"
     bl_label = "Export to RPF/FiveM"
@@ -196,9 +202,9 @@ class ExportToRpfOperator(Operator):
                         self.report({'WARNING'}, f"YTYP export failed for {obj.name}: {e}")
 
                 # === Collect any matching .xml files for this object ===
-                obj_name_lower = obj.name.lower()
+                canonical_name = get_canonical_object_name(obj, context.scene.objects, profile=DEFAULT_EQUIVALENCE_PROFILE).lower()
                 for f in os.listdir(props.blender_output_dir):
-                    if f.lower().startswith(obj_name_lower + ".") and f.endswith(".xml"):
+                    if f.lower().startswith(canonical_name + ".") and f.endswith(".xml"):
                         full_path = os.path.join(props.blender_output_dir, f)
                         exported_files.append(full_path)
 
